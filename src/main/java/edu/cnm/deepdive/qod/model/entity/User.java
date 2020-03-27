@@ -1,25 +1,18 @@
 package edu.cnm.deepdive.qod.model.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import edu.cnm.deepdive.qod.view.FlatQuote;
-import edu.cnm.deepdive.qod.view.FlatSource;
+import edu.cnm.deepdive.qod.view.FlatUser;
 import java.net.URI;
 import java.util.Date;
-import java.util.Objects;
 import java.util.UUID;
 import javax.annotation.PostConstruct;
-import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
-import javax.persistence.Index;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
@@ -33,27 +26,22 @@ import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
 @SuppressWarnings("JpaDataSourceORMInspection")
-@Component
 @Entity
-@Table(
-    indexes = {
-        @Index(columnList = "created"),
-        @Index(columnList = "text"),
-        @Index(columnList = "source_id, text", unique = true)
-    }
-)
+@Table(name = "user_profile")
+@Component
 @JsonIgnoreProperties(
     value = {"id", "created", "updated", "href"},
     allowGetters = true,
     ignoreUnknown = true
 )
-public class Quote implements FlatQuote {
+public class User implements FlatUser {
 
   private static EntityLinks entityLinks;
 
-  @Id@GeneratedValue(generator = "uuid2")
+  @Id
+  @GeneratedValue(generator = "uuid2")
   @GenericGenerator(name = "uuid2", strategy = "uuid2")
-  @Column(name = "quote_id", columnDefinition = "CHAR(16) FOR BIT DATA",
+  @Column(name = "user_profile_id", columnDefinition = "CHAR(16) FOR BIT DATA",
       nullable = false, updatable = false)
   private UUID id;
 
@@ -67,17 +55,16 @@ public class Quote implements FlatQuote {
   @Column(nullable = false)
   private Date updated;
 
-
   @NonNull
   @NotBlank
-  @Column(length = 4096, nullable = false)
-  private String text;
+  private String displayName;
 
-  @ManyToOne(fetch = FetchType.EAGER,
-      cascade = {CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
-  @JoinColumn(name = "source_id")
-  @JsonSerialize(as = FlatSource.class)
-  private Source source;
+  @Enumerated(value = EnumType.ORDINAL)
+  private Role role;
+
+  @JsonIgnore
+  @NonNull
+  private String oauthKey;
 
   @Override
   public UUID getId() {
@@ -94,44 +81,38 @@ public class Quote implements FlatQuote {
     return updated;
   }
 
-  @NonNull
   @Override
-  public String getText() {
-    return text;
+  @NonNull
+  public String getDisplayName() {
+    return displayName;
   }
 
-  public void setText(@NonNull String text) {
-    this.text = text;
+  public void setDisplayName(@NonNull String displayName) {
+    this.displayName = displayName;
   }
 
-  public Source getSource() {
-    return source;
+  @Override
+  @NonNull
+  public Role getRole() {
+    return role;
   }
 
-  public void setSource(Source source) {
-    this.source = source;
+  public void setRole(Role role) {
+    this.role = role;
+  }
+
+  @NonNull
+  public String getOauthKey() {
+    return oauthKey;
+  }
+
+  public void setOauthKey(@NonNull String oauthKey) {
+    this.oauthKey = oauthKey;
   }
 
   @Override
   public URI getHref() {
-    return (id != null) ? entityLinks.linkForItemResource(Quote.class, id).toUri() : null;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(id, text); // TODO Compute lazily & cache.
-  }
-
-  @Override
-  public boolean equals(Object obj) {
-    boolean result = false;
-    if (obj == this) {
-      result = true;
-    } else if (obj instanceof Quote && obj.hashCode() == hashCode()) {
-      Quote other = (Quote) obj;
-      result = id.equals(other.id) && text.equals(other.text);
-    }
-    return result;
+    return (id != null) ? entityLinks.linkForItemResource(User.class, id).toUri() : null;
   }
 
   @SuppressWarnings("ResultOfMethodCallIgnored")
@@ -143,7 +124,11 @@ public class Quote implements FlatQuote {
   @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
   @Autowired
   private void setEntityLinks(EntityLinks entityLinks) {
-    Quote.entityLinks = entityLinks;
+    User.entityLinks = entityLinks;
+  }
+
+  public enum Role {
+    USER, ADMIN
   }
 
 }
