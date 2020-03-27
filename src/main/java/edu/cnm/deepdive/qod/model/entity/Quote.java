@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import edu.cnm.deepdive.qod.view.FlatQuote;
 import edu.cnm.deepdive.qod.view.FlatSource;
+import edu.cnm.deepdive.qod.view.FlatUser;
 import java.net.URI;
 import java.util.Date;
 import java.util.Objects;
@@ -67,7 +68,6 @@ public class Quote implements FlatQuote {
   @Column(nullable = false)
   private Date updated;
 
-
   @NonNull
   @NotBlank
   @Column(length = 4096, nullable = false)
@@ -78,6 +78,12 @@ public class Quote implements FlatQuote {
   @JoinColumn(name = "source_id")
   @JsonSerialize(as = FlatSource.class)
   private Source source;
+
+  @ManyToOne(fetch = FetchType.EAGER,
+      cascade = {CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
+  @JoinColumn(name = "contributer_id")
+  @JsonSerialize(as = FlatUser.class)
+  private User contributer;
 
   @Override
   public UUID getId() {
@@ -110,6 +116,14 @@ public class Quote implements FlatQuote {
 
   public void setSource(Source source) {
     this.source = source;
+  }
+
+  public User getContributer() {
+    return contributer;
+  }
+
+  public void setContributer(User contributer) {
+    this.contributer = contributer;
   }
 
   @Override
